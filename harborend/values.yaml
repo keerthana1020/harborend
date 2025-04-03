@@ -191,7 +191,7 @@ exporters:
       pullPolicy: IfNotPresent
     port: 9121
     serviceMonitor:
-      enabled: true
+      enabled: false
       interval: 30s
     resources:
       requests:
