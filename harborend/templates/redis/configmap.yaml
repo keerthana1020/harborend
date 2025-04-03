@@ -1,0 +1,15 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "harbor.fullname" . }}-redis-config
+  labels:
+    {{- include "harbor.labels" . | nindent 4 }}
+data:
+  redis.conf: |
+    # Redis configuration for EBS persistent storage
+    dir /data
+    appendonly yes
+    appendfsync everysec
+    storage-class: ebs
+    maxmemory {{ .Values.redis.memoryLimit | default "1gb" }}
+    maxmemory-policy allkeys-lru

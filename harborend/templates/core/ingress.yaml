@@ -1,0 +1,19 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: {{ include "harbor.fullname" . }}-core-ingress
+  annotations:
+    {{- toYaml .Values.core.ingress.annotations | nindent 4 }}
+spec:
+  ingressClassName: {{ .Values.core.ingress.ingressClassName }}
+  rules:
+  - host: {{ .Values.core.ingress.host }}
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: {{ include "harbor.fullname" . }}-core
+            port:
+              number: 80

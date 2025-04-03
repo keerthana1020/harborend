@@ -1,0 +1,23 @@
+apiVersion: v2
+name: harbor-custom
+description: Custom Harbor Helm chart with EBS storage support
+type: application
+version: 1.0.0  # Your chart version
+appVersion: 2.12.2  # Harbor version you're using
+
+# Remove Bitnami dependencies since you want to avoid them
+dependencies: []  # Empty array means no dependencies
+
+# Optional: If you're using external services, you can declare them like this:
+# dependencies:
+#   - name: postgresql
+#     version: "~12.1.0"
+#     repository: "https://charts.helm.sh/stable"  # Official Helm repo
+#     condition: postgresql.enabled
+
+annotations:
+  storage.ebs/enabled: "true"
+  storage.class: "ebs-sc"
+
+sources:
+  - https://github.com/goharbor/harbor

@@ -1,0 +1,29 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "harbor.fullname" . }}-core
+  labels:
+    {{- include "harbor.labels" . | nindent 4 }}
+spec:
+  replicas: {{ .Values.core.replicaCount }}
+  selector:
+    matchLabels:
+      {{- include "harbor.selectorLabels" . | nindent 6 }}
+      component: core
+  template:
+    metadata:
+      labels:
+        {{- include "harbor.selectorLabels" . | nindent 8 }}
+        component: core
+    spec:
+      volumes:
+        - name: core-data
+          persistentVolumeClaim:
+            claimName: {{ include "harbor.fullname" . }}-core-pvc
+      containers:
+      - name: core
+        image: {{ .Values.core.image.repository }}:{{ .Values.core.image.tag }}
+        volumeMounts:
+          - name: core-data
+            mountPath: /data
+        # Rest of your container config...

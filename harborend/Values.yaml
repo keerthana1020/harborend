@@ -1,0 +1,240 @@
+persistence:
+  # EFS StorageClass Configuration
+  createStorageClass: true
+  storageClass: "harbor-efs"
+  setAsDefault: false  # Set to true to make this the default StorageClass
+  efsFileSystemId: "fs-07d8f2c5b4afcd916"  # REQUIRED: Your EFS filesystem ID (e.g. "fs-12345678")
+  
+  # Advanced EFS Configuration
+  efsBasePath: "/harbor"  # Base directory path on EFS
+  gidRangeStart: "1000"   # Start of GID range for dynamic provisioning
+  gidRangeEnd: "2000"     # End of GID range for dynamic provisioning
+  reclaimPolicy: "Retain" # PV reclaim policy (Retain/Delete)
+  volumeBindingMode: "Immediate" # Or "WaitForFirstConsumer"
+  
+  # Mount Options
+  extraMountOptions:
+    - iam
+    - accesspoint=fsap-1234567890abcdef0  # Optional EFS access point
+core:
+  replicaCount: 1
+  image:
+    repository: goharbor/harbor-core
+    tag: v2.13.0
+  service:
+    type: ClusterIP
+  ingress:
+    enabled: true
+    host: harbor.example.com
+    annotations: {}
+    ingressClassName: nginx
+  pdb:
+    minAvailable: 1
+
+persistence:
+  core:
+    enabled: true
+    size: 5Gi
+    annotations: {}
+jobservice:
+  replicaCount: 1
+  workerCount: 10
+  logLevel: "info"
+  image:
+    repository: goharbor/harbor-jobservice
+    tag: v2.13.0
+  service:
+    type: ClusterIP
+
+persistence:
+  jobservice:
+    enabled: true
+    size: 1Gi
+    annotations: {}
+    storageClass: ebs-sc
+redis:
+  replicaCount: 1
+  memoryLimit: "1gb"
+  image:
+    repository: redis
+    tag: 6.2-alpine
+  persistence:
+    enabled: true
+
+persistence:
+  redis:
+    size: 1Gi
+    storageClass: ebs-sc
+    annotations: {}
+postgresql:
+  enabled: true
+  replicaCount: 1
+  image:
+    repository: postgres
+    tag: latest
+    pullPolicy: IfNotPresent
+  statefulset:
+    enabled: true
+  auth:
+    username: "postgres"
+    password: "change-me"
+    database: "registry"
+  persistence:
+    enabled: true
+    size: 8Gi
+    accessMode: ReadWriteOnce
+    storageClass: "efs-sc"
+    efsFileSystemId: "fs-07d8f2c5b4afcd916"  # Your EFS filesystem ID
+    createPV: true      # Set to true for manual PV creation
+    mountPath: "/var/lib/postgresql/data/pgdata"
+  resources:
+    requests:
+      cpu: 200m
+      memory: 512Mi
+    limits:
+      cpu: 1
+      memory: 2Gi
+portal:
+  enabled: true
+  replicaCount: 2
+  image:
+    repository: goharbor/harbor-portal
+    tag: v2.8.0
+    pullPolicy: IfNotPresent
+  service:
+    type: ClusterIP
+    port: 80
+  nodeEnv: "production"
+  showSelfRegistration: false
+  harborVersion: "v2.8.0"
+  resources:
+    requests:
+      cpu: 100m
+      memory: 128Mi
+    limits:
+      cpu: 500m
+      memory: 256Mi
+trivy:
+  enabled: true
+  replicaCount: 1
+  image:
+    repository: aquasec/trivy
+    tag: 0.44.1
+    pullPolicy: IfNotPresent
+  service:
+    type: ClusterIP
+    port: 80
+  storageBackend: "redis"  # or "filesystem" if using PVC only
+  logLevel: "info"
+  persistence:
+    enabled: true
+    size: 5Gi
+    accessMode: ReadWriteMany
+    mountPath: "/home/scanner/.cache/trivy"
+  resources:
+    requests:
+      cpu: 500m
+      memory: 1Gi
+    limits:
+      cpu: 1
+      memory: 2Gi
+core:
+  secretKey: "" # If empty will auto-generate
+  coreSecret: "" # If empty will auto-generate
+  registryHttpSecret: "" # If empty will auto-generate
+
+jobservice:
+  secret: "" # If empty will auto-generate
+  registryUsername: "admin"
+  registryPassword: "" # If empty will auto-generate
+
+redis:
+  auth:
+    password: "" # If empty will auto-generate
+
+postgresql:
+  auth:
+    password: "" # If empty will auto-generate
+    postgresPassword: "" # If empty will auto-generate
+
+trivy:
+  apiPassword: "" # If empty will auto-generate
+  redisPassword: "" # If empty will auto-generate
+
+exporters:
+  enabled: true
+  core:
+    replicaCount: 1
+    image:
+      repository: goharbor/harbor-exporter
+      tag: v2.13.0
+      pullPolicy: IfNotPresent
+    port: 8001
+    username: "admin"
+    password: "Harbor12345"
+    serviceMonitor:
+      enabled: true
+      interval: 30s
+    resources:
+      requests:
+        cpu: 100m
+        memory: 128Mi
+      limits:
+        cpu: 200m
+        memory: 256Mi
+  
+  redis:
+    replicaCount: 1
+    image:
+      repository: oliver006/redis_exporter
+      tag: v1.69.0
+      pullPolicy: IfNotPresent
+    port: 9121
+    serviceMonitor:
+      enabled: true
+      interval: 30s
+    resources:
+      requests:
+        cpu: 100m
+        memory: 128Mi
+      limits:
+        cpu: 200m
+        memory: 256Mi
+  
+  postgresql:
+    replicaCount: 1
+    image:
+      repository: prometheuscommunity/postgres-exporter
+      tag: v0.17.1
+      pullPolicy: IfNotPresent
+    port: 9187
+    serviceMonitor:
+      enabled: true
+      interval: 30s
+    resources:
+      requests:
+        cpu: 100m
+        memory: 128Mi
+      limits:
+        cpu: 200m
+        memory: 256Mi
+  
+  harbor:
+    replicaCount: 1
+    image:
+      repository: goharbor/harbor-exporter
+      tag: v2.13.0
+      pullPolicy: IfNotPresent
+    port: 9090
+    username: "admin"
+    password: "Harbor12345"
+    serviceMonitor:
+      enabled: true
+      interval: 30s
+    resources:
+      requests:
+        cpu: 100m
+        memory: 128Mi
+      limits:
+        cpu: 200m
+        memory: 256Mi

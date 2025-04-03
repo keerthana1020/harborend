@@ -1,0 +1,17 @@
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: {{ include "harbor.fullname" . }}-core-pvc
+  labels:
+    {{- include "harbor.labels" . | nindent 4 }}
+spec:
+  storageClassName: ebs-sc
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: {{ .Values.persistence.core.size | default "5Gi" }}
+  {{- with .Values.persistence.core.annotations }}
+  annotations:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}

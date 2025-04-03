@@ -1,0 +1,18 @@
+{{- if .Values.exporters.core.serviceMonitor.enabled }}
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: {{ include "harbor.fullname" . }}-core-exporter
+  labels:
+    {{- include "harbor.labels" . | nindent 4 }}
+    app.kubernetes.io/component: core-exporter
+spec:
+  selector:
+    matchLabels:
+      {{- include "harbor.selectorLabels" . | nindent 6 }}
+      app.kubernetes.io/component: core-exporter
+  endpoints:
+  - port: metrics
+    interval: {{ .Values.exporters.core.serviceMonitor.interval }}
+    path: /metrics
+{{- end }}

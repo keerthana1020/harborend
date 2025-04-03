@@ -1,0 +1,61 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: {{ include "harbor.fullname" . }}-postgresql
+  labels:
+    {{- include "harbor.labels" . | nindent 4 }}
+spec:
+  serviceName: {{ include "harbor.fullname" . }}-postgresql
+  replicas: {{ .Values.postgresql.replicaCount }}
+  selector:
+    matchLabels:
+      {{- include "harbor.selectorLabels" . | nindent 6 }}
+      component: postgresql
+  template:
+    metadata:
+      labels:
+        {{- include "harbor.selectorLabels" . | nindent 8 }}
+        component: postgresql
+    spec:
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      securityContext:
+        fsGroup: 999
+      containers:
+      - name: postgresql
+        image: "{{ .Values.postgresql.image.repository }}:{{ .Values.postgresql.image.tag }}"
+        imagePullPolicy: {{ .Values.postgresql.image.pullPolicy }}
+        env:
+        - name: POSTGRES_USER
+          value: {{ .Values.postgresql.auth.username | quote }}
+        - name: POSTGRES_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: {{ include "harbor.fullname" . }}-postgresql-secrets
+              key: postgres-password
+        - name: POSTGRES_DB
+          value: {{ .Values.postgresql.auth.database | quote }}
+        - name: PGDATA
+          value: {{ .Values.postgresql.persistence.mountPath | default "/var/lib/postgresql/data/pgdata" }}
+        ports:
+        - containerPort: 5432
+          name: postgresql
+        volumeMounts:
+        - name: config
+          mountPath: /docker-entrypoint-initdb.d/init.sql
+          subPath: init.sql
+        - name: postgresql-data
+          mountPath: {{ .Values.postgresql.persistence.mountPath | default "/var/lib/postgresql/data" }}
+        resources:
+          {{- toYaml .Values.postgresql.resources | nindent 10 }}
+  volumeClaimTemplates:
+  - metadata:
+      name: postgresql-data
+    spec:
+      accessModes: [ "{{ .Values.postgresql.persistence.accessMode | default "ReadWriteOnce" }}" ]
+      storageClassName: {{ .Values.postgresql.persistence.storageClass | default "efs-sc" }}
+      resources:
+        requests:
+          storage: {{ .Values.postgresql.persistence.size | default "8Gi" }}

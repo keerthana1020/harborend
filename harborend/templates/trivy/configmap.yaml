@@ -1,0 +1,29 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "harbor.fullname" . }}-trivy-config
+  labels:
+    {{- include "harbor.labels" . | nindent 4 }}
+data:
+  config.yaml: |
+    version: 2
+    server:
+      listen: 0.0.0.0:8080
+    cache:
+      type: {{ .Values.trivy.storageBackend | default "redis" }}
+      {{- if eq (default "redis" .Values.trivy.storageBackend) "redis" }}
+      redis:
+        url: redis://{{ include "harbor.fullname" . }}-redis:6379
+      {{- end }}
+    scanner:
+      disable_analyzers: ""
+      disable_jar_analyzer: false
+      disable_os_analyzer: false
+      disable_python_pkg_analyzer: false
+      disable_golang_bin_analyzer: false
+    vulnerability:
+      type: "os"
+      update_interval: "12h"
+    db:
+      skip_update: false
+      update_interval: "12h"

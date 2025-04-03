@@ -1,0 +1,16 @@
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  name: ebs-sc
+  labels:
+    app: harbor
+    storage: ebs
+provisioner: ebs.csi.aws.com
+volumeBindingMode: WaitForFirstConsumer
+parameters:
+  type: gp3
+  fsType: ext4
+  encrypted: "true"  # Enable EBS encryption
+  # kmsKeyId: "arn:aws:kms:us-west-2:111122223333:key/1234abcd-12ab-34cd-56ef-1234567890ab"  # Uncomment to use specific KMS key
+reclaimPolicy: Retain
+allowVolumeExpansion: true

@@ -1,0 +1,38 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "harbor.fullname" . }}-harbor-exporter
+  labels:
+    {{- include "harbor.labels" . | nindent 4 }}
+    app.kubernetes.io/component: harbor-exporter
+spec:
+  replicas: {{ .Values.exporters.harbor.replicaCount }}
+  selector:
+    matchLabels:
+      {{- include "harbor.selectorLabels" . | nindent 6 }}
+      app.kubernetes.io/component: harbor-exporter
+  template:
+    metadata:
+      labels:
+        {{- include "harbor.selectorLabels" . | nindent 8 }}
+        app.kubernetes.io/component: harbor-exporter
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "{{ .Values.exporters.harbor.port }}"
+    spec:
+      containers:
+      - name: harbor-exporter
+        image: "{{ .Values.exporters.harbor.image.repository }}:{{ .Values.exporters.harbor.image.tag }}"
+        imagePullPolicy: {{ .Values.exporters.harbor.image.pullPolicy }}
+        env:
+        - name: HARBOR_URL
+          value: "http://{{ include "harbor.fullname" . }}-core:{{ .Values.core.service.port }}"
+        - name: HARBOR_USERNAME
+          value: "{{ .Values.exporters.harbor.username }}"
+        - name: HARBOR_PASSWORD
+          value: "{{ .Values.exporters.harbor.password }}"
+        ports:
+        - containerPort: {{ .Values.exporters.harbor.port }}
+          name: metrics
+        resources:
+          {{- toYaml .Values.exporters.harbor.resources | nindent 10 }}

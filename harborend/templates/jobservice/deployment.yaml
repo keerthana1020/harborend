@@ -1,0 +1,33 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "harbor.fullname" . }}-jobservice
+  labels:
+    {{- include "harbor.labels" . | nindent 4 }}
+spec:
+  replicas: {{ .Values.jobservice.replicaCount }}
+  selector:
+    matchLabels:
+      {{- include "harbor.selectorLabels" . | nindent 6 }}
+      component: jobservice
+  template:
+    metadata:
+      labels:
+        {{- include "harbor.selectorLabels" . | nindent 8 }}
+        component: jobservice
+    spec:
+      volumes:
+        - name: jobservice-data
+          persistentVolumeClaim:
+            claimName: {{ include "harbor.fullname" . }}-jobservice-pvc
+      containers:
+      - name: jobservice
+        image: {{ .Values.jobservice.image.repository }}:{{ .Values.jobservice.image.tag }}
+        volumeMounts:
+          - name: jobservice-data
+            mountPath: /var/log/jobs
+        env:
+        - name: CORE_URL
+          value: http://{{ include "harbor.fullname" . }}-core:80
+        - name: JOBSERVICE_POOL_WORKERS
+          value: {{ .Values.jobservice.workerCount | quote }}

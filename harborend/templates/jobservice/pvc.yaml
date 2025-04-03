@@ -1,0 +1,17 @@
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: {{ include "harbor.fullname" . }}-jobservice-pvc
+  labels:
+    {{- include "harbor.labels" . | nindent 4 }}
+spec:
+  storageClassName: ebs-sc
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: {{ .Values.persistence.jobservice.size | default "1Gi" }}
+  {{- with .Values.persistence.jobservice.annotations }}
+  annotations:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}

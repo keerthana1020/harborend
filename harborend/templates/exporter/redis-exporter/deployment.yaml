@@ -1,0 +1,34 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "harbor.fullname" . }}-redis-exporter
+  labels:
+    {{- include "harbor.labels" . | nindent 4 }}
+    app.kubernetes.io/component: redis-exporter
+spec:
+  replicas: {{ .Values.exporters.redis.replicaCount }}
+  selector:
+    matchLabels:
+      {{- include "harbor.selectorLabels" . | nindent 6 }}
+      app.kubernetes.io/component: redis-exporter
+  template:
+    metadata:
+      labels:
+        {{- include "harbor.selectorLabels" . | nindent 8 }}
+        app.kubernetes.io/component: redis-exporter
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "{{ .Values.exporters.redis.port }}"
+    spec:
+      containers:
+      - name: redis-exporter
+        image: "{{ .Values.exporters.redis.image.repository }}:{{ .Values.exporters.redis.image.tag }}"
+        imagePullPolicy: {{ .Values.exporters.redis.image.pullPolicy }}
+        args:
+        - "--redis.addr=redis://{{ include "harbor.fullname" . }}-redis:6379"
+        - "--redis.password={{ .Values.redis.auth.password }}"
+        ports:
+        - containerPort: {{ .Values.exporters.redis.port }}
+          name: metrics
+        resources:
+          {{- toYaml .Values.exporters.redis.resources | nindent 10 }}

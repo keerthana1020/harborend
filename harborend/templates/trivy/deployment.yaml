@@ -1,0 +1,57 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "harbor.fullname" . }}-trivy
+  labels:
+    {{- include "harbor.labels" . | nindent 4 }}
+spec:
+  replicas: {{ .Values.trivy.replicaCount }}
+  selector:
+    matchLabels:
+      {{- include "harbor.selectorLabels" . | nindent 6 }}
+      component: trivy
+  template:
+    metadata:
+      labels:
+        {{- include "harbor.selectorLabels" . | nindent 8 }}
+        component: trivy
+    spec:
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      containers:
+      - name: trivy
+        image: "{{ .Values.trivy.image.repository }}:{{ .Values.trivy.image.tag }}"
+        imagePullPolicy: {{ .Values.trivy.image.pullPolicy }}
+        env:
+        - name: TRIVY_STORAGE
+          value: {{ .Values.trivy.storageBackend | default "redis" }}
+        - name: REDIS_URL
+          value: {{ include "harbor.fullname" . }}-redis:6379
+        - name: SCANNER_LOG_LEVEL
+          value: {{ .Values.trivy.logLevel | default "info" }}
+        - name: TRIVY_CACHE_DIR
+          value: {{ .Values.trivy.persistence.mountPath | default "/home/scanner/.cache/trivy" }}
+        ports:
+        - containerPort: 8080
+          name: http
+        volumeMounts:
+        - name: config
+          mountPath: /etc/trivy/config.yaml
+          subPath: config.yaml
+        {{- if .Values.trivy.persistence.enabled }}
+        - name: trivy-cache
+          mountPath: {{ .Values.trivy.persistence.mountPath | default "/home/scanner/.cache/trivy" }}
+        {{- end }}
+        resources:
+          {{- toYaml .Values.trivy.resources | nindent 10 }}
+      volumes:
+      - name: config
+        configMap:
+          name: {{ include "harbor.fullname" . }}-trivy-config
+      {{- if .Values.trivy.persistence.enabled }}
+      - name: trivy-cache
+        persistentVolumeClaim:
+          claimName: {{ include "harbor.fullname" . }}-trivy-pvc
+      {{- end }}

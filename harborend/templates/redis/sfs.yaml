@@ -1,0 +1,37 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: {{ include "harbor.fullname" . }}-redis
+  labels:
+    {{- include "harbor.labels" . | nindent 4 }}
+spec:
+  serviceName: {{ include "harbor.fullname" . }}-redis
+  replicas: {{ .Values.redis.replicaCount }}
+  selector:
+    matchLabels:
+      {{- include "harbor.selectorLabels" . | nindent 6 }}
+      component: redis
+  template:
+    metadata:
+      labels:
+        {{- include "harbor.selectorLabels" . | nindent 8 }}
+        component: redis
+    spec:
+      containers:
+      - name: redis
+        image: {{ .Values.redis.image.repository }}:{{ .Values.redis.image.tag }}
+        volumeMounts:
+        - name: redis-data
+          mountPath: /data
+        ports:
+        - containerPort: 6379
+          name: redis
+  volumeClaimTemplates:
+  - metadata:
+      name: redis-data
+    spec:
+      storageClassName: ebs-sc
+      accessModes: [ "ReadWriteOnce" ]
+      resources:
+        requests:
+          storage: {{ .Values.persistence.redis.size | default "1Gi" }}
